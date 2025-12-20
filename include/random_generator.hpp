@@ -1,10 +1,12 @@
 #pragma once
+
 #include <cstdint>
+#include <chrono>
 
 class RandomGenerator {
 public:
     explicit RandomGenerator(uint64_t seed = 0) {
-        seed += 0x9E3779B97F4A7C15ULL;
+        seed += std::chrono::steady_clock::now().time_since_epoch().count();
         state = 0;
         increment = (seed << 1u) | 1u; // гарантируем нечётный increment
         next();
