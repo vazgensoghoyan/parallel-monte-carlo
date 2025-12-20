@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <stdexcept>
+#include <atomic>
 #include <omp.h>
 
 #include "hit.h"

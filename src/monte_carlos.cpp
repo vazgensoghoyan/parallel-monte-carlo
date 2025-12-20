@@ -7,7 +7,7 @@ double monte_carlo_single(size_t N) {
     float z_min = ranges[4], z_max = ranges[5];
 
     RandomGenerator rng;
-    double hits = 0;
+    double hits = 0.0;
 
     for (size_t i = 0; i < N; ++i) {
         float x = x_min + rng.next() * (x_max - x_min);
@@ -77,6 +77,7 @@ double monte_carlo_auto_parallel(size_t N, const Arguments& args) {
 
 double monte_carlo_manual_parallel(size_t N, const Arguments& args) {
     const float* ranges = get_axis_range();
+
     float x_min = ranges[0], x_max = ranges[1];
     float y_min = ranges[2], y_max = ranges[3];
     float z_min = ranges[4], z_max = ranges[5];
@@ -86,25 +87,58 @@ double monte_carlo_manual_parallel(size_t N, const Arguments& args) {
     int num_threads = (args.threads > 0 ? args.threads : omp_get_max_threads());
     omp_set_num_threads(num_threads);
 
+    int chunk = (args.chunk_size > 0 ? args.chunk_size : 1); // Оптимальный по умолчанию
+    ScheduleKind kind = args.kind;                            // Auto → static по умолчанию
+    if (kind == ScheduleKind::Auto)
+        kind = ScheduleKind::Static;
+
+    size_t num_chunks = (N + chunk - 1) / chunk; // ceil(N / chunk)
+
     #pragma omp parallel
     {
         int tid = omp_get_thread_num();
-        int nthreads = omp_get_num_threads();
-
         RandomGenerator rng(tid);
+        
         double local_hits = 0.0;
 
-        size_t points_per_thread = N / nthreads;
-        size_t start = tid * points_per_thread;
-        size_t end = (tid == nthreads - 1) ? N : start + points_per_thread;
+        if (kind == ScheduleKind::Static) {
 
-        for (size_t i = start; i < end; ++i) {
-            float x = x_min + rng.next() * (x_max - x_min);
-            float y = y_min + rng.next() * (y_max - y_min);
-            float z = z_min + rng.next() * (z_max - z_min);
+            for (size_t chunk_id = tid; chunk_id < num_chunks; chunk_id += num_threads) {
+                size_t start = chunk_id * chunk;
+                size_t end = std::min(start + chunk, N);
 
-            if (hit_test(x, y, z))
-                local_hits += 1.0;
+                for (size_t i = start; i < end; ++i) {
+                    float x = x_min + rng.next() * (x_max - x_min);
+                    float y = y_min + rng.next() * (y_max - y_min);
+                    float z = z_min + rng.next() * (z_max - z_min);
+
+                    if (hit_test(x, y, z))
+                        local_hits += 1.0;
+                }
+            }
+
+        } else if (kind == ScheduleKind::Dynamic) {
+
+            static std::atomic<size_t> next_chunk{0};
+
+            while (true) {
+                size_t chunk_id = next_chunk.fetch_add(1);
+                if (chunk_id >= num_chunks)
+                    break;
+
+                size_t start = chunk_id * chunk;
+                size_t end = std::min(start + chunk, N);
+
+                for (size_t i = start; i < end; ++i) {
+                    float x = x_min + rng.next() * (x_max - x_min);
+                    float y = y_min + rng.next() * (y_max - y_min);
+                    float z = z_min + rng.next() * (z_max - z_min);
+
+                    if (hit_test(x, y, z))
+                        local_hits += 1.0;
+                }
+            }
+
         }
 
         #pragma omp atomic
