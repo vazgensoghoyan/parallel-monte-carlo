@@ -20,18 +20,25 @@ int main(int argc, char* argv[]) {
 
         size_t N = args.read_N();
 
-        double start_time = omp_get_wtime();
-        double volume = calculate_volume(N, args);
-        double end_time = omp_get_wtime();
+        double total_time = 0.0;
+        int num_runs = 5;
+        double volume = 0.0;
+
+        for (int i = 0; i < num_runs; ++i) { // несколько запусков, усредняем время
+            double start_time = omp_get_wtime();
+            volume = calculate_volume(N, args);
+            double end_time = omp_get_wtime();
+            total_time += (end_time - start_time) * 1000.0;
+        }
 
         write_result(args.output_file, volume);
 
         int num_threads = 0;
-        if (args.realization > 1) 
+        if (args.realization > 1)
             num_threads = args.threads > 0 ? args.threads : omp_get_max_threads();
-        
-            double elapsed_ms = (end_time - start_time) * 1000.0;
-        std::cout << "Time (" << num_threads << " thread(s)): " << elapsed_ms << " ms\n";
+
+        double avg_time_ms = total_time / num_runs;
+        std::cout << "Time (" << num_threads << " thread(s)): " << avg_time_ms << " ms\n";
 
     } catch (const std::exception& e) {
         std::cerr << "[ERROR]: " << e.what() << "\n";
