@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
 
         double total_time = 0.0;
         int num_runs = 5;
-        double volume = 0.0;
+        float volume = 0.0f;
 
         for (int i = 0; i < num_runs; ++i) { // несколько запусков, усредняем время
             double start_time = omp_get_wtime();

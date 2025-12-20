@@ -1,14 +1,11 @@
 #include "monte_carlos.hpp"
 
-static inline double count_hits(size_t start, size_t end,
+static inline float count_hits(size_t start, size_t end,
                          float x_min, float x_max, float y_min, 
                          float y_max, float z_min, float z_max,
+                         float dx, float dy, float dz,
                          RandomGenerator& rng) {
-    double hits = 0.0;
-
-    float dx = x_max - x_min;
-    float dy = y_max - y_min;
-    float dz = z_max - z_min;
+    float hits = 0.0;
 
     for (size_t i = start; i < end; ++i) {
         float x = x_min + rng.next_float() * dx;
@@ -23,35 +20,32 @@ static inline double count_hits(size_t start, size_t end,
 }
 
 static inline void get_ranges(float& x_min, float& x_max,
-                       float& y_min, float& y_max,
-                       float& z_min, float& z_max) {
+                              float& y_min, float& y_max,
+                              float& z_min, float& z_max,
+                              float& dx, float& dy, float& dz) {
     const float* ranges = get_axis_range();
     x_min = ranges[0]; x_max = ranges[1];
     y_min = ranges[2]; y_max = ranges[3];
     z_min = ranges[4]; z_max = ranges[5];
+
+    dx = x_max - x_min;
+    dy = y_max - y_min;
+    dz = z_max - z_min;
 }
 
-static inline double box_volume(float x_min, float x_max,
-                                   float y_min, float y_max,
-                                   float z_min, float z_max) {
-    return static_cast<double>(x_max - x_min) *
-           static_cast<double>(y_max - y_min) *
-           static_cast<double>(z_max - z_min);
-}
-
-double monte_carlo_single(size_t N) {
-    float x_min, x_max, y_min, y_max, z_min, z_max;
-    get_ranges(x_min, x_max, y_min, y_max, z_min, z_max);
+float monte_carlo_single(size_t N) {
+    float x_min, x_max, y_min, y_max, z_min, z_max, dx, dy, dz;
+    get_ranges(x_min, x_max, y_min, y_max, z_min, z_max, dx, dy, dz);
 
     RandomGenerator rng;
-    double hits = count_hits(0, N, x_min, x_max, y_min, y_max, z_min, z_max, rng);
+    float hits = count_hits(0, N, x_min, x_max, y_min, y_max, z_min, z_max, dx, dy, dz, rng);
 
-    return box_volume(x_min, x_max, y_min, y_max, z_min, z_max) * hits / N;
+    return dx * dy * dz * hits / N;
 }
 
-double monte_carlo_auto_parallel(size_t N, const Arguments& args) {
-    float x_min, x_max, y_min, y_max, z_min, z_max;
-    get_ranges(x_min, x_max, y_min, y_max, z_min, z_max);
+float monte_carlo_auto_parallel(size_t N, const Arguments& args) {
+    float x_min, x_max, y_min, y_max, z_min, z_max, dx, dy, dz;
+    get_ranges(x_min, x_max, y_min, y_max, z_min, z_max, dx, dy, dz);
 
     int num_threads = (args.threads > 0 ? args.threads : omp_get_max_threads());
     omp_sched_t schedule_kind = (args.kind == ScheduleKind::Dynamic) ? omp_sched_dynamic : omp_sched_static;
@@ -60,14 +54,14 @@ double monte_carlo_auto_parallel(size_t N, const Arguments& args) {
     omp_set_num_threads(num_threads);
     omp_set_schedule(schedule_kind, chunk);
 
-    std::vector<double> local_hits(num_threads, 0.0);
+    std::vector<float> local_hits(num_threads, 0.0);
 
     #pragma omp parallel
     {
         int tid = omp_get_thread_num();
         RandomGenerator rng(tid);
 
-        double hits_thread = 0.0;
+        float hits_thread = 0.0;
 
         #pragma omp for schedule(runtime)
         for (size_t i = 0; i < N; ++i) {
@@ -81,15 +75,15 @@ double monte_carlo_auto_parallel(size_t N, const Arguments& args) {
         local_hits[tid] = hits_thread;
     }
 
-    double hits = 0.0;
-    for (double h : local_hits) hits += h;
+    float hits = 0.0;
+    for (float h : local_hits) hits += h;
 
-    return box_volume(x_min, x_max, y_min, y_max, z_min, z_max) * hits / N;
+    return dx * dy * dz * hits / N;
 }
 
-double monte_carlo_manual_parallel(size_t N, const Arguments& args) {
-    float x_min, x_max, y_min, y_max, z_min, z_max;
-    get_ranges(x_min, x_max, y_min, y_max, z_min, z_max);
+float monte_carlo_manual_parallel(size_t N, const Arguments& args) {
+    float x_min, x_max, y_min, y_max, z_min, z_max, dx, dy, dz;
+    get_ranges(x_min, x_max, y_min, y_max, z_min, z_max, dx, dy, dz);
 
     int num_threads = (args.threads > 0 ? args.threads : omp_get_max_threads());
     omp_set_num_threads(num_threads);
@@ -97,14 +91,14 @@ double monte_carlo_manual_parallel(size_t N, const Arguments& args) {
     int chunk = (args.chunk_size > 0 ? args.chunk_size : 1);
     size_t num_chunks = (N + chunk - 1) / chunk;
 
-    std::vector<double> local_hits(num_threads, 0.0);
+    std::vector<float> local_hits(num_threads, 0.0);
 
     #pragma omp parallel
     {
         int tid = omp_get_thread_num();
         RandomGenerator rng(tid);
 
-        double hits_thread = 0.0;
+        float hits_thread = 0.0;
 
         if (args.kind == ScheduleKind::Dynamic) {
 
@@ -117,7 +111,7 @@ double monte_carlo_manual_parallel(size_t N, const Arguments& args) {
                 size_t start = chunk_id * chunk;
                 size_t end = std::min(start + chunk, N);
                 
-                hits_thread += count_hits(start, end, x_min, x_max, y_min, y_max, z_min, z_max, rng);
+                hits_thread += count_hits(start, end, x_min, x_max, y_min, y_max, z_min, z_max, dx, dy, dz, rng);
             }
         } else { // Static or Auto
 
@@ -126,20 +120,20 @@ double monte_carlo_manual_parallel(size_t N, const Arguments& args) {
                 size_t start = chunk_id * chunk;
                 size_t end = std::min(start + chunk, N);
                 
-                hits_thread += count_hits(start, end, x_min, x_max, y_min, y_max, z_min, z_max, rng);
+                hits_thread += count_hits(start, end, x_min, x_max, y_min, y_max, z_min, z_max, dx, dy, dz, rng);
             }
         }
 
         local_hits[tid] = hits_thread;
     }
 
-    double hits = 0.0;
-    for (double h : local_hits) hits += h;
+    float hits = 0.0;
+    for (float h : local_hits) hits += h;
 
-    return box_volume(x_min, x_max, y_min, y_max, z_min, z_max) * hits / N;
+    return dx * dy * dz * hits / N;
 }
 
-double calculate_volume(size_t N, const Arguments& args) {
+float calculate_volume(size_t N, const Arguments& args) {
     switch (args.realization) {
         case 1: return monte_carlo_single(N);
         case 2: return monte_carlo_auto_parallel(N, args);
