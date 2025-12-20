@@ -54,17 +54,24 @@ static void parse_chunk_size(int argc, char* argv[], Arguments& args, int& i) {
 Arguments Arguments::parse_arguments(int argc, char* argv[]) {
     Arguments args;
 
+    bool has_input = false;
+    bool has_output = false;
+    bool has_realization = false;
+
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
 
         if (arg == "--input") {
             parse_input(argc, argv, args, i);
+            has_input = true;
 
         } else if (arg == "--output") {
             parse_output(argc, argv, args, i);
+            has_output = true;
 
         } else if (arg == "--realization") {
             parse_realization(argc, argv, args, i);
+            has_realization = true;
 
         } else if (arg == "--threads") {
             parse_threads(argc, argv, args, i);
