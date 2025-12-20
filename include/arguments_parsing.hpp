@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <fstream>
 #include <cstdlib>
+#include <omp.h>
 
 enum class ScheduleKind { Auto, Static, Dynamic };
 
@@ -19,8 +20,8 @@ public:
     std::string output_file;
     int realization;
 
-    int threads = -1;              // -1 = использовать OpenMP default
+    int threads = omp_get_max_threads();
     ScheduleKind kind = ScheduleKind::Auto;
-    int chunk_size = -1;           // -1 = оптимальный
+    int chunk_size = 20;
 
 };

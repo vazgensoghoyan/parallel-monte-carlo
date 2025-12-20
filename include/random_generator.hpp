@@ -25,7 +25,7 @@ public:
 
     // случайное число в [0, 1)
     double next_double() {
-        return next() * (1.0f / 4294967296.0f); // 2^32
+        return next() * (1.0 / 4294967296.0); // 2^32
     }
 
 private:
