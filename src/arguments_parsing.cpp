@@ -85,6 +85,9 @@ Arguments Arguments::parse_arguments(int argc, char* argv[]) {
         } else { } // ignoring 
     }
 
+    if (!has_input || !has_output || !has_realization)
+        throw std::invalid_argument("Missing required argument");
+
     return args;
 }
 

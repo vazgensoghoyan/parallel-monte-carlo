@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Time (" << num_threads << " thread(s)): " << elapsed_ms << " ms\n";
 
     } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << "\n";
+        std::cerr << "[ERROR]: " << e.what() << "\n";
         return 1;
     }
 
