@@ -53,7 +53,8 @@ double monte_carlo_auto_parallel(size_t N, const Arguments& args) {
 
     #pragma omp parallel
     {
-        RandomGenerator rng;  // генератор на поток
+        int tid = omp_get_thread_num();
+        RandomGenerator rng(tid);  // генератор на поток
         double local_hits = 0.0;
 
         #pragma omp for schedule(runtime) // используем runtime, т.к. мы уже установили schedule
@@ -90,7 +91,7 @@ double monte_carlo_manual_parallel(size_t N, const Arguments& args) {
         int tid = omp_get_thread_num();
         int nthreads = omp_get_num_threads();
 
-        RandomGenerator rng;
+        RandomGenerator rng(tid);
         double local_hits = 0.0;
 
         size_t points_per_thread = N / nthreads;
