@@ -113,3 +113,23 @@ double monte_carlo_manual_parallel(size_t N, const Arguments& args) {
     double volume_box = (x_max - x_min) * (y_max - y_min) * (z_max - z_min);
     return volume_box * hits / N;
 }
+
+double calculate_volume(size_t N, const Arguments& args) {
+    double volume = 0.0;
+
+    switch (args.realization) {
+        case 1:
+            volume = monte_carlo_single(N);
+            break;
+        case 2:
+            volume = monte_carlo_auto_parallel(N, args);
+            break;
+        case 3:
+            volume = monte_carlo_manual_parallel(N, args);
+            break;
+        default:
+            throw std::invalid_argument("Invalid realization number");
+    }
+
+    return volume;
+}

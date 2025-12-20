@@ -14,26 +14,6 @@ void write_result(const std::string& filename, double volume) {
     fout << volume << "\n";
 }
 
-double calculate_volume(size_t N, const Arguments& args) {
-    double volume = 0.0;
-
-    switch (args.realization) {
-        case 1:
-            volume = monte_carlo_single(N);
-            break;
-        case 2:
-            volume = monte_carlo_auto_parallel(N, args);
-            break;
-        case 3:
-            volume = monte_carlo_manual_parallel(N, args);
-            break;
-        default:
-            throw std::invalid_argument("Invalid realization number");
-    }
-
-    return volume;
-}
-
 int main(int argc, char* argv[]) {
     try {
         auto args = Arguments::parse_arguments(argc, argv);
