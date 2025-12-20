@@ -1,32 +1,42 @@
 #include "monte_carlos.hpp"
 
-static inline double count_hits(size_t start, size_t end, float x_min, float x_max,
-                         float y_min, float y_max, float z_min, float z_max,
+static inline double count_hits(size_t start, size_t end,
+                         float x_min, float x_max, float y_min, 
+                         float y_max, float z_min, float z_max,
                          RandomGenerator& rng) {
     double hits = 0.0;
+
+    float dx = x_max - x_min;
+    float dy = y_max - y_min;
+    float dz = z_max - z_min;
+
     for (size_t i = start; i < end; ++i) {
-        float x = x_min + rng.next_float() * (x_max - x_min);
-        float y = y_min + rng.next_float() * (y_max - y_min);
-        float z = z_min + rng.next_float() * (z_max - z_min);
+        float x = x_min + rng.next_float() * dx;
+        float y = y_min + rng.next_float() * dy;
+        float z = z_min + rng.next_float() * dz;
 
         if (hit_test(x, y, z))
             hits += 1.0;
     }
+
     return hits;
 }
 
-static inline void get_ranges(float& x_min, float& x_max, float& y_min, 
-                       float& y_max, float& z_min, float& z_max) {
+static inline void get_ranges(float& x_min, float& x_max,
+                       float& y_min, float& y_max,
+                       float& z_min, float& z_max) {
     const float* ranges = get_axis_range();
-
     x_min = ranges[0]; x_max = ranges[1];
     y_min = ranges[2]; y_max = ranges[3];
     z_min = ranges[4]; z_max = ranges[5];
 }
 
-static inline double box_volume(float x_min, float x_max, float y_min, 
-                         float y_max, float z_min, float z_max) {
-    return (x_max - x_min) * (y_max - y_min) * (z_max - z_min);
+static inline double box_volume(float x_min, float x_max,
+                                   float y_min, float y_max,
+                                   float z_min, float z_max) {
+    return static_cast<double>(x_max - x_min) *
+           static_cast<double>(y_max - y_min) *
+           static_cast<double>(z_max - z_min);
 }
 
 double monte_carlo_single(size_t N) {
@@ -57,6 +67,8 @@ double monte_carlo_auto_parallel(size_t N, const Arguments& args) {
         int tid = omp_get_thread_num();
         RandomGenerator rng(tid);
 
+        double hits_thread = 0.0;
+
         #pragma omp for schedule(runtime)
         for (size_t i = 0; i < N; ++i) {
             float x = x_min + rng.next_float() * (x_max - x_min);
@@ -64,8 +76,9 @@ double monte_carlo_auto_parallel(size_t N, const Arguments& args) {
             float z = z_min + rng.next_float() * (z_max - z_min);
 
             if (hit_test(x, y, z))
-                local_hits[tid] += 1.0;
+                hits_thread += 1.0;
         }
+        local_hits[tid] = hits_thread;
     }
 
     double hits = 0.0;
@@ -91,6 +104,8 @@ double monte_carlo_manual_parallel(size_t N, const Arguments& args) {
         int tid = omp_get_thread_num();
         RandomGenerator rng(tid);
 
+        double hits_thread = 0.0;
+
         if (args.kind == ScheduleKind::Dynamic) {
 
             static std::atomic<size_t> next_chunk{0};
@@ -102,17 +117,20 @@ double monte_carlo_manual_parallel(size_t N, const Arguments& args) {
                 size_t start = chunk_id * chunk;
                 size_t end = std::min(start + chunk, N);
                 
-                local_hits[tid] += count_hits(start, end, x_min, x_max, y_min, y_max, z_min, z_max, rng);
+                hits_thread += count_hits(start, end, x_min, x_max, y_min, y_max, z_min, z_max, rng);
             }
         } else { // Static or Auto
 
             for (size_t chunk_id = tid; chunk_id < num_chunks; chunk_id += num_threads) {
+                
                 size_t start = chunk_id * chunk;
                 size_t end = std::min(start + chunk, N);
                 
-                local_hits[tid] += count_hits(start, end, x_min, x_max, y_min, y_max, z_min, z_max, rng);
+                hits_thread += count_hits(start, end, x_min, x_max, y_min, y_max, z_min, z_max, rng);
             }
         }
+
+        local_hits[tid] = hits_thread;
     }
 
     double hits = 0.0;

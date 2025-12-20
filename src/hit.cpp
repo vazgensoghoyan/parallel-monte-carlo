@@ -14,10 +14,7 @@ bool hit_test(float x, float y, float z) {
         return false;
 
     float x2 = x * x;
-    float x3 = x2 * x;
-    float x4 = x2 * x2;
-
-    float value = (x4 - a * x3) + a * a * (y * y + z * z);
+    float value = fmaf(x2, x2 - a*x, a*a*(y*y + z*z));
 
     return value <= 0.0f;
 }

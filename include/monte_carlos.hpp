@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <stdexcept>
+#include <vector>
 #include <atomic>
 #include <omp.h>
 

@@ -4,6 +4,7 @@
 class RandomGenerator {
 public:
     explicit RandomGenerator(uint64_t seed = 0) {
+        seed += 0x9E3779B97F4A7C15ULL;
         state = 0;
         increment = (seed << 1u) | 1u; // гарантируем нечётный increment
         next();
