@@ -24,7 +24,7 @@ public:
     }
 
     // случайное число в [0, 1)
-    float next_float() {
+    double next_double() {
         return next() * (1.0f / 4294967296.0f); // 2^32
     }
 
