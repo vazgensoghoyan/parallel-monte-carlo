@@ -4,26 +4,25 @@
 #include <cstdint>
 
 class RandomGenerator {
-public:
-    RandomGenerator() : RandomGenerator(0) {}
 
-    explicit RandomGenerator(int thread_id) {
-        constexpr uint32_t base_seed = 0xdeadbeef;
+    public:
+    explicit RandomGenerator(uint64_t seed = 0) : state(seed ? seed : 0xDEADBEEF) {}
 
-        std::seed_seq seq{
-            base_seed,
-            static_cast<uint32_t>(thread_id),
-            static_cast<uint32_t>(thread_id * 2654435761u)
-        };
+    uint64_t next() {
+        uint64_t x = state;
 
-        rng.seed(seq);
+        x ^= x << 13;
+        x ^= x >> 7;
+        x ^= x << 17;
+
+        state = x;
+        return x;
     }
 
-    inline float next() {
-        return dist(rng);
+    float next_float() {
+        return (next() >> 40) * (1.0f / 16777216.0f);
     }
 
 private:
-    std::mt19937 rng;
-    std::uniform_real_distribution<float> dist{0.0f, 1.0f};
+    uint64_t state;
 };
