@@ -33,9 +33,9 @@ static void parse_kind(int argc, char* argv[], Arguments& args, int& i) {
         throw std::invalid_argument("--kind requires a value");
     std::string value = argv[i];
     if (value == "static") {
-        args.kind = Arguments::ScheduleKind::Static;
+        args.kind = ScheduleKind::Static;
     } else if (value == "dynamic") {
-        args.kind = Arguments::ScheduleKind::Dynamic;
+        args.kind = ScheduleKind::Dynamic;
     } else {
         throw std::invalid_argument("--kind must be 'static' or 'dynamic'");
     }
@@ -51,7 +51,9 @@ static void parse_chunk_size(int argc, char* argv[], Arguments& args, int& i) {
         throw std::invalid_argument("--chunk_size must be a positive integer");
 }
 
-void parse_arguments(int argc, char* argv[], Arguments& args) {
+Arguments Arguments::parse_arguments(int argc, char* argv[]) {
+    Arguments args;
+
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
 
@@ -75,4 +77,6 @@ void parse_arguments(int argc, char* argv[], Arguments& args) {
 
         } else { // ignoring }
     }
+
+    return args;
 }
