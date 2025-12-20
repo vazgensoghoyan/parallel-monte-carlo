@@ -75,8 +75,20 @@ Arguments Arguments::parse_arguments(int argc, char* argv[]) {
         } else if (arg == "--chunk_size") {
             parse_chunk_size(argc, argv, args, i);
 
-        } else { // ignoring }
+        } else { } // ignoring 
     }
 
     return args;
+}
+
+size_t Arguments::read_N() const {
+    std::ifstream fin(input_file);
+    if (!fin)
+        throw std::runtime_error("Failed to open input file: " + input_file);
+
+    size_t N;
+    if (!(fin >> N))
+        throw std::runtime_error("Failed to read number of points from: " + input_file);
+
+    return N;
 }
