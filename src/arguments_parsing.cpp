@@ -100,5 +100,8 @@ size_t Arguments::read_N() const {
     if (!(fin >> N))
         throw std::runtime_error("Failed to read number of points from: " + input_file);
 
+    if (N <= 0)
+        throw std::runtime_error("N <= 0 in input file");
+
     return N;
 }
