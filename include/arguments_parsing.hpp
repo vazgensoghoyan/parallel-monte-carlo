@@ -22,6 +22,6 @@ public:
 
     int threads = omp_get_max_threads();
     ScheduleKind kind = ScheduleKind::Auto;
-    int chunk_size = 128;
+    int chunk_size = 500;
 
 };
