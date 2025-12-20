@@ -88,6 +88,7 @@ double monte_carlo_manual_parallel(size_t N, const Arguments& args) {
     size_t num_chunks = (N + args.chunk_size - 1) / args.chunk_size;
 
     double hits = 0.0;
+    std::atomic<size_t> next_chunk{0};
 
     #pragma omp parallel
     {
@@ -97,8 +98,6 @@ double monte_carlo_manual_parallel(size_t N, const Arguments& args) {
         double hits_thread = 0.0;
 
         if (args.kind == ScheduleKind::Dynamic) {
-
-            std::atomic<size_t> next_chunk{0};
 
             while (true) {
                 size_t chunk_id = next_chunk.fetch_add(1);
