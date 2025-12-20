@@ -38,8 +38,8 @@ hit.h не изменен, но скопирован в директорию inc
 
 Значения по умолчанию выбраны:
 - chunk size = 256
-- threads = **TODO**
-- kind = ScheduleKind::Auto (в методах избирается лучший вариант) **TODO**
+- threads = omp_get_max_threads()
+- kind = ScheduleKind::Auto (в методах избирается лучший вариант)
 
 Класс проверяет корректность значений и наличие обязательных аргументов (--input, --output, --realization).
 
