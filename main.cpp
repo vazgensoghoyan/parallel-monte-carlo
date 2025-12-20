@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
-#include <omp.h>
 
 #include "hit.h"
 #include "arguments_parsing.hpp"
@@ -23,10 +22,10 @@ double calculate_volume(size_t N, const Arguments& args) {
             volume = monte_carlo_single(N);
             break;
         case 2:
-            volume = monte_carlo_auto_parallel(N);
+            volume = monte_carlo_auto_parallel(N, args);
             break;
         case 3:
-            volume = monte_carlo_manual_parallel(N);
+            volume = monte_carlo_manual_parallel(N, args);
             break;
         default:
             throw std::invalid_argument("Invalid realization number");
