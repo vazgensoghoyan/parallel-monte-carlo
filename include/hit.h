@@ -1,4 +1,4 @@
-#pragma once
+#pragma once // hit.h
 #include <stdbool.h>
 
 #ifdef __cplusplus

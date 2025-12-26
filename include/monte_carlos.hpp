@@ -1,4 +1,4 @@
-#pragma once
+#pragma once // monte_carlos.hpp
 
 #include <cstddef>
 #include <stdexcept>
